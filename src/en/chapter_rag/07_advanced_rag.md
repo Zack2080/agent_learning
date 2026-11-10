@@ -83,7 +83,7 @@ asyncio.run(query_graphrag("When was GPT-4's Vision feature released?", "local")
 asyncio.run(query_graphrag("What are the recurring core themes across these documents?", "global"))
 ```
 
-> 💡 **Cost Estimate**: 1000 short documents (~500K tokens), `gpt-4.1-mini` ~$0.4-1, `text-embedding-3-small` ~$0.02.
+> 💡 **Cost Estimate**: 1000 short documents (~500K tokens), `gpt-4.1-mini` ~\$0.4-1, `text-embedding-3-small` ~\$0.02.
 
 ### 1.4 LightRAG: A Lower-Cost Alternative
 

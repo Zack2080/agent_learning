@@ -83,7 +83,7 @@ asyncio.run(query_graphrag("GPT-4 的 Vision 功能何时发布？", "local"))
 asyncio.run(query_graphrag("这些文档中反复提及的核心主题是什么？", "global"))
 ```
 
-> 💡 **成本估算**：1000 篇短文档（约 500K tokens），`gpt-4.1-mini` 约 $0.4-1，`text-embedding-3-small` 约 $0.02。
+> 💡 **成本估算**：1000 篇短文档（约 500K tokens），`gpt-4.1-mini` 约 \$0.4-1，`text-embedding-3-small` 约 \$0.02。
 
 ### 1.4 LightRAG：成本更低的替代方案
 

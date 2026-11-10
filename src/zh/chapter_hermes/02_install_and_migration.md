@@ -11,7 +11,7 @@ Hermes Agent 给用户的部署选项和 OpenClaw 类似，但**多了"从 OpenC
 | 场景 | 命令 | 适合 |
 |------|------|------|
 | **A: 个人 macOS / Linux** | `curl -fsSL https://hermes-agent.nousresearch.com/install.sh \| bash` | 长期在自己机器上 |
-| **B: VPS（$5/月起的 Linux）** | 同 A + `pm2 start hermes-gateway` | 想 24/7 在线 |
+| **B: VPS（\$5/月起的 Linux）** | 同 A + `pm2 start hermes-gateway` | 想 24/7 在线 |
 | **C: Docker 沙箱** | `docker pull hermes/agent:latest` | 生产化、隔离 |
 | **D: OpenClaw 迁移** | `hermes claw migrate` | 从 OpenClaw 平迁 |
 | **E: Modal/Daytona（Serverless 休眠）** | `hermes deploy modal` | 不想开机就能用 |
@@ -76,7 +76,7 @@ $ pm2 startup
 $ pm2 start "hermes web" --name hermes-web
 ```
 
-`$5/月` 的 VPS 足够跑——CPU 跑 LLM 调用（用云端 API）、存储 25 GB 足够、技能市场增量更新。
+`\$5/月` 的 VPS 足够跑——CPU 跑 LLM 调用（用云端 API）、存储 25 GB 足够、技能市场增量更新。
 
 ---
 

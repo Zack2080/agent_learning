@@ -12,15 +12,15 @@ In an Agent system, not every task needs the strongest model. Simple questions c
 
 | Model | Input Price (/1M tokens) | Output Price (/1M tokens) | Reasoning Ability | Speed |
 |------|----------------------|----------------------|----------|------|
-| gpt-4.1 | $2.00 | $8.00 | Strong | Medium |
-| gpt-4.1-mini | $0.40 | $1.60 | Medium | Fast |
-| gpt-4.1-nano | $0.10 | $0.40 | Basic | Fastest |
+| gpt-4.1 | \$2.00 | \$8.00 | Strong | Medium |
+| gpt-4.1-mini | \$0.40 | \$1.60 | Medium | Fast |
+| gpt-4.1-nano | \$0.10 | \$0.40 | Basic | Fastest |
 
 Suppose an Agent processes 10,000 requests per day:
 
-- **All on gpt-4.1**: about $100/day, or $3,000/month
-- **Intelligent routing (70% small model + 30% large model)**: about $40/day, or $1,200/month
-- **Savings**: about $1,800/month, or $21,600/year
+- **All on gpt-4.1**: about \$100/day, or \$3,000/month
+- **Intelligent routing (70% small model + 30% large model)**: about \$40/day, or \$1,200/month
+- **Savings**: about \$1,800/month, or \$21,600/year
 
 > 💡 **Key insight**: In production, most requests are simple tasks (FAQ, format conversion, information extraction), and only a few require deep reasoning. Intelligent routing can "save the large model for the scenarios that truly need it."
 
@@ -282,9 +282,9 @@ for name, ratios in strategies.items():
 
 | Strategy | Monthly cost | Weighted quality | Cost-efficiency |
 |------|--------|----------|--------|
-| All large model | ~$3,600 | 0.95 | 0.26 |
-| All medium model | ~$720 | 0.85 | 1.18 |
-| Intelligent routing | ~$1,080 | 0.86 | 0.80 |
+| All large model | ~\$3,600 | 0.95 | 0.26 |
+| All medium model | ~\$720 | 0.85 | 1.18 |
+| Intelligent routing | ~\$1,080 | 0.86 | 0.80 |
 
 > ⚠️ **Note**: Intelligent routing's quality is slightly below using all large models, but the cost drops by about 70%. The key is to find the balance point where "quality loss is acceptable and cost savings are significant."
 
@@ -552,7 +552,7 @@ Reply with only: simple / medium / complex"""
 | Method | Cost | Accuracy | Latency | Maintainability |
 |------|------|--------|------|----------|
 | Static rules | Zero | 60-70% | 0ms | Low (rule bloat) |
-| LLM routing | $0.001/call | 85-90% | 200-500ms | High |
+| LLM routing | \$0.001/call | 85-90% | 200-500ms | High |
 | Trained router model | Training cost | 80-88% | <10ms | Medium (needs periodic retraining) |
 
 ---
@@ -709,7 +709,7 @@ class RouterEvaluator:
 
 ## Case Study: Cost Modeling for a Customer-Service Routing System
 
-> ⚠️ **Honest note**: An older version of this section ran a "simulated routing" with the removed `SmartRouter` and presented a cost comparison table that looked like real results (monthly cost $2,880 / $780, etc.). Those numbers were actually **illustrative assumptions**, not measurements from a real system. Below we instead use the `CostQualityAnalyzer` retained in this section for cost modeling; the numbers are also **extrapolated from the given rates and task distribution** — treat it as a demonstration of "how to model", not a measurement of some product.
+> ⚠️ **Honest note**: An older version of this section ran a "simulated routing" with the removed `SmartRouter` and presented a cost comparison table that looked like real results (monthly cost \$2,880 / \$780, etc.). Those numbers were actually **illustrative assumptions**, not measurements from a real system. Below we instead use the `CostQualityAnalyzer` retained in this section for cost modeling; the numbers are also **extrapolated from the given rates and task distribution** — treat it as a demonstration of "how to model", not a measurement of some product.
 
 ### Scenario and Task Distribution (Assumed)
 
@@ -833,7 +833,7 @@ These two calls have exactly the same effect, but character-by-character string 
 
 </details>
 
-**Exercise 3 (Hands-on)**: A customer-service system gets 10,000 requests/day, of which 70% are simple tasks and 30% are complex tasks. You want to use "cascade routing": try the cheap small model first; the small model can answer simple tasks correctly 90% of the time (no escalation needed), but complex tasks must always escalate to the large model. Assume the small model costs $0.001/call and the large model costs $0.01/call. Write a function that estimates how much cascade routing saves versus "all large models", and say when cascade routing is actually not worthwhile.
+**Exercise 3 (Hands-on)**: A customer-service system gets 10,000 requests/day, of which 70% are simple tasks and 30% are complex tasks. You want to use "cascade routing": try the cheap small model first; the small model can answer simple tasks correctly 90% of the time (no escalation needed), but complex tasks must always escalate to the large model. Assume the small model costs \$0.001/call and the large model costs \$0.01/call. Write a function that estimates how much cascade routing saves versus "all large models", and say when cascade routing is actually not worthwhile.
 
 <details>
 <summary>Reference answer</summary>
@@ -889,11 +889,11 @@ print(f"Saved per day: ${r['saved_daily']:.2f} ({r['saved_ratio']:.0%})")
 ```
 
 Let's compute:
-- Simple tasks 7000 calls: small model 7000×$0.001 = $7; of which 10% (700) escalate, large model 700×$0.01 = $7
-- Complex tasks 3000 calls: small model wasted 3000×$0.001 = $3; large model 3000×$0.01 = $30
-- Cascade total = 7+7+3+30 = **$47/day**
-- All large models = 10000×$0.01 = **$100/day**
-- Saved $53/day, about **53%**
+- Simple tasks 7000 calls: small model 7000×\$0.001 = \$7; of which 10% (700) escalate, large model 700×\$0.01 = \$7
+- Complex tasks 3000 calls: small model wasted 3000×\$0.001 = \$3; large model 3000×\$0.01 = \$30
+- Cascade total = 7+7+3+30 = **\$47/day**
+- All large models = 10000×\$0.01 = **\$100/day**
+- Saved \$53/day, about **53%**
 
 **When cascade is actually not worthwhile**: if complex tasks make up a high share (few simple tasks), then a large number of requests will "waste one small-model call before escalating", and that single small-model call is pure waste — stacked up it may even cost more than just using the large model directly. So as this chapter says — **cascade routing fits scenarios where "simple tasks dominate"**; when complex tasks dominate, it's better to route directly to the large model, or switch to an LLM router that judges complexity in one shot.
 

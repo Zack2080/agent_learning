@@ -30,7 +30,7 @@ Reasons for choosing pipeline architecture in this chapter:
 |--------------|----------|------------|
 | Execution Steps | Fixed 6 steps | Uncertain (3–15 steps) |
 | LLM Calls | 3 times (Text-to-SQL + Insights + Report) | 5–10+ times |
-| Per-request Cost | ~$0.05 | ~$0.15–0.50 |
+| Per-request Cost | ~\$0.05 | ~\$0.15–0.50 |
 | Debuggability | Each step output inspectable | Requires full trace |
 | Suitable Scenarios | Standard data analysis workflows | Open-ended exploratory analysis |
 
@@ -445,7 +445,7 @@ After reading this chapter, close the book and answer the following questions in
 
 **Benefits of pipeline architecture in data analysis scenarios** (see the comparison table in 24.5):
 
-1. **Controllable cost**: Fixed six steps require only 3 LLM calls (Text-to-SQL, insight generation, report writing), about $0.05 per request; while Agent loops require 5–10+ calls, costing 3–10x more.
+1. **Controllable cost**: Fixed six steps require only 3 LLM calls (Text-to-SQL, insight generation, report writing), about \$0.05 per request; while Agent loops require 5–10+ calls, costing 3–10x more.
 2. **Predictable latency**: Fixed steps mean users roughly know how long to wait; Agent loops have an uncertain number of steps (3–15), and latency can spiral out of control.
 3. **Easy to debug and troubleshoot**: The input and output of each step are clearly defined — you can see at a glance where a problem occurred; with Agent loops, you need to dig through the full execution trace to pinpoint issues.
 4. **Reliable and predictable**: Standard data analysis workflows naturally follow "query → statistics → chart → report," with clear steps — there's no need for the LLM to improvise.

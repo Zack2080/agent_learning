@@ -173,11 +173,11 @@ While GraphRAG (Microsoft) improves global question answering through knowledge 
 
 LightRAG significantly reduces costs while preserving the graph-enhanced advantages:
 
-> **GraphRAG's cost**: Indexing 1,000 documents → may require $50-100 in LLM call fees; adding 10 documents → requires rebuilding the entire community structure
+> **GraphRAG's cost**: Indexing 1,000 documents → may require \$50-100 in LLM call fees; adding 10 documents → requires rebuilding the entire community structure
 >
 > **LightRAG's improvements**: Simplified entity/relationship extraction (reducing LLM calls) + Dual-layer retrieval (low-level precise retrieval + high-level abstract retrieval) + Incremental updates (new documents only need new entities extracted and merged)
 >
-> **Cost comparison**: GraphRAG $100+ / 1M Token indexing vs LightRAG $5-10 / 1M Token indexing (10-20x reduction)
+> **Cost comparison**: GraphRAG \$100+ / 1M Token indexing vs LightRAG \$5-10 / 1M Token indexing (10-20x reduction)
 
 ### Key Findings
 

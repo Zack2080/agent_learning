@@ -374,7 +374,7 @@ If your GPU usage is not continuous (for example, you only need inference during
 | Max runtime | unlimited | 10 minutes | 1 hour |
 | Python-native | ✅ (decorator syntax) | ❌ (must build an image) | ❌ |
 | Best for | low-latency inference, batch processing | general GPU compute | long training / inference |
-| Lowest cost (A100) | ~$1.94/h | ~$1.64/h | ~$3.51/h |
+| Lowest cost (A100) | ~\$1.94/h | ~\$1.64/h | ~\$3.51/h |
 
 ### Modal in Practice
 
@@ -644,7 +644,7 @@ class HybridRouter:
 | Monthly requests | 1 million | 1 million | 1 million |
 | Baseline QPS | 5 | — | 5 (covered by self-hosted) |
 | Peak QPS | 20 | 20 | 5 self-hosted + 15 Serverless |
-| Monthly GPU cost | ~$2,400 (2×A100 monthly) | ~$1,800 (pay-per-use) | ~$1,400 (1×A100 + peak overflow) |
+| Monthly GPU cost | ~\$2,400 (2×A100 monthly) | ~\$1,800 (pay-per-use) | ~\$1,400 (1×A100 + peak overflow) |
 | Availability | May overload at peak | High (elastic) | High |
 | Cost efficiency | Low (idle waste) | Medium | **High** |
 

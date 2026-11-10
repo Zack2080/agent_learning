@@ -9,7 +9,7 @@
 | Scenario | Command | For |
 |----------|---------|-----|
 | A: macOS/Linux | `curl -fsSL https://hermes-agent.nousresearch.com/install.sh \| bash` | long-term on your machine |
-| B: VPS ($5/mo) | same + `pm2 start hermes-gateway` | 24/7 |
+| B: VPS (\$5/mo) | same + `pm2 start hermes-gateway` | 24/7 |
 | C: Docker | `docker pull hermes/agent:latest` | production / isolation |
 | D: OpenClaw migration | `hermes claw migrate` | migrate from OpenClaw |
 | E: Modal/Daytona | `hermes deploy modal` | serverless hibernation |

@@ -72,7 +72,7 @@ DeepSeek-R1 is the most milestone-worthy work in this field. Its core finding is
 
 #### Core Technical Points
 
-1. **The GRPO algorithm**: uses Group Relative Policy Optimization (see [10.5 GRPO/GSPO: Group Relative Policy Optimization and Reward Function Design](./05_grpo.md)) to optimize the policy through within-group competition among responses, avoiding an expensive Critic network. Total training cost was roughly $294,000.
+1. **The GRPO algorithm**: uses Group Relative Policy Optimization (see [10.5 GRPO/GSPO: Group Relative Policy Optimization and Reward Function Design](./05_grpo.md)) to optimize the policy through within-group competition among responses, avoiding an expensive Critic network. Total training cost was roughly \$294,000.
 
 2. **Multi-stage training framework**:
    - **R1-Zero stage**: uses only result correctness as the reward (verifiable reward, RLVR), with no SFT data at all. The model spontaneously exhibits an "Aha moment" — learning to self-reflect and self-correct during reasoning.

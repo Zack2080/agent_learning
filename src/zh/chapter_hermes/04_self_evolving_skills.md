@@ -143,7 +143,7 @@ def extract_skill(trajectory: dict, llm) -> dict:
     # 2. 调 LLM 生成（invoke 返回 AIMessage，取 .content 得到纯文本）
     raw = llm.invoke(prompt).content
 
-    # 3. 解析 JSON（LLM 可能输出 ```json 包裹或前后有废话）
+    # 3. 解析 JSON（LLM 可能输出反引号包裹的 json 代码块或前后有废话）
     #    用正则提取第一个 { 到最后一个 }，比手动 strip/replace 更稳——
     #    手动 replace("json","") 会误删内容里恰好出现的 "json" 字样。
     match = re.search(r'\{.*\}', raw, re.DOTALL)

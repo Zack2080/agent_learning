@@ -466,9 +466,9 @@ Understanding the caching mechanism is key to cost reduction:
 
 | Model | Approximate Cost | Suitable Scenarios |
 |------|---------|---------|
-| Haiku | ~$0.25 | Simple tasks |
-| Sonnet | ~$3.00 | Daily development (recommended) |
-| Opus | ~$16.00 | Complex architecture design |
+| Haiku | ~\$0.25 | Simple tasks |
+| Sonnet | ~\$3.00 | Daily development (recommended) |
+| Opus | ~\$16.00 | Complex architecture design |
 
 ### 3.4 Monitoring Usage
 
@@ -600,7 +600,7 @@ npm update -g @anthropic-ai/claude-code
 | **Context Management** | Three-tier Compression + Long-term Memory | Limited | Limited | Limited |
 | **Project Config File** | CLAUDE.md (auto-read) | None | Rules (manual config) | None |
 | **CI/CD Integration** | ✅ Headless Mode | Limited | ❌ | Limited |
-| **Pricing Model** | Per Token | Subscription ($19/mo) | Subscription ($20/mo) | Per Token |
+| **Pricing Model** | Per Token | Subscription (\$19/mo) | Subscription (\$20/mo) | Per Token |
 | **Offline Use** | ❌ | ❌ | ❌ | ✅ (local models) |
 | **Open Source** | ❌ (accidental leak) | ❌ | ❌ | ✅ |
 
