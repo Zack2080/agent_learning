@@ -269,3 +269,8 @@ body.notes-panel-open .page-wrapper {
   font-size: 0.8rem;
   opacity: 0.6;
 }
+
+/* 导入用隐藏 file input */
+#notes-import-input {
+  display: none;
+}

@@ -744,6 +744,101 @@
     };
   }
 
+  // === 导入导出 ===
+  function initImportExport() {
+    var isZh = isZhPage();
+
+    window.__notesExport = function () {
+      var notes = loadNotes();
+      if (!notes.length) {
+        window.alert(isZh ? '暂无笔记可导出' : 'No notes to export');
+        return;
+      }
+      var d = new Date();
+      var pad = function (x) { return (x < 10 ? '0' : '') + x; };
+      var fname = 'book-notes-' + d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) + '.json';
+      var blob = new Blob([JSON.stringify(notes, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () {
+        URL.revokeObjectURL(a.href);
+        a.remove();
+      }, 100);
+    };
+
+    window.__notesImport = function () {
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json,application/json';
+      input.id = 'notes-import-input';
+      input.addEventListener('change', function () {
+        var file = input.files && input.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function () {
+          var imported;
+          try {
+            imported = JSON.parse(reader.result);
+          } catch (e) {
+            window.alert(isZh ? '文件格式不正确' : 'Invalid file format');
+            return;
+          }
+          if (!Array.isArray(imported)) {
+            window.alert(isZh ? '文件格式不正确' : 'Invalid file format');
+            return;
+          }
+          // 校验必填字段
+          imported = imported.filter(function (n) {
+            return n && typeof n === 'object' &&
+              typeof n.id === 'string' && n.id &&
+              typeof n.label === 'string' &&
+              typeof n.chapterPath === 'string' &&
+              typeof n.quote === 'string' && n.quote;
+          });
+          var local = loadNotes();
+          var localIds = {};
+          local.forEach(function (n) { localIds[n.id] = true; });
+          var added = 0, skipped = 0;
+          imported.forEach(function (n) {
+            if (localIds[n.id]) { skipped++; return; }
+            local.push({
+              id: n.id,
+              label: n.label,
+              chapterPath: n.chapterPath,
+              chapterTitle: String(n.chapterTitle || ''),
+              sectionId: String(n.sectionId || ''),
+              sectionTitle: String(n.sectionTitle || ''),
+              quote: n.quote,
+              prefix: String(n.prefix || ''),
+              suffix: String(n.suffix || ''),
+              createdAt: Number(n.createdAt) || 0
+            });
+            localIds[n.id] = true;
+            added++;
+          });
+          if (added === 0 && skipped === 0) {
+            window.alert(isZh ? '文件中没有有效笔记' : 'No valid notes in file');
+            return;
+          }
+          saveNotes(local);
+          if (window.__notesPanelRefresh) window.__notesPanelRefresh();
+          // 当前页如有新笔记，补渲染高亮
+          renderPageNotes();
+          window.alert(isZh
+            ? '导入 ' + added + ' 条' + (skipped ? '，跳过 ' + skipped + ' 条重复' : '')
+            : 'Imported ' + added + (skipped ? ', skipped ' + skipped + ' duplicates' : ''));
+        };
+        reader.readAsText(file);
+      });
+      document.body.appendChild(input);
+      input.click();
+      setTimeout(function () { input.remove(); }, 5000);
+    };
+  }
+
   // === 启动入口（后续任务在此追加初始化调用） ===
   function init() {
     renderPageNotes();
@@ -751,6 +846,7 @@
     initPanel();
     initNavigation();
     initEditDelete();
+    initImportExport();
   }
 
   if (document.readyState === 'loading') {
