@@ -83,9 +83,140 @@
     return (document.documentElement.lang || '').indexOf('zh') === 0;
   }
 
+  // === 文本查找与高亮渲染 ===
+  // 收集 root 下的文本节点，拼成整串并记录偏移映射
+  function buildTextIndex(rootEl) {
+    if (!rootEl) return null;
+    var walker = document.createTreeWalker(
+      rootEl,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: function (node) {
+          if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          var p = node.parentElement;
+          // 跳过已有标记与脚本样式
+          if (p && (p.closest('script, style, .note-highlight'))) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    );
+    var text = '';
+    var offsets = [];
+    var node;
+    while ((node = walker.nextNode())) {
+      offsets.push({ node: node, start: text.length });
+      text += node.nodeValue;
+    }
+    return { text: text, offsets: offsets };
+  }
+
+  function normalizeSpace(s) {
+    return s.replace(/\s+/g, ' ');
+  }
+
+  // 在拼接串中定位 quote；带 prefix/suffix 消歧，失败退回仅 quote
+  function findMatch(index, prefix, quote, suffix) {
+    if (!index || !quote) return null;
+    var hay = normalizeSpace(index.text);
+    var q = normalizeSpace(quote);
+    if (!q) return null;
+    var probe = null;
+    if (prefix || suffix) {
+      probe = normalizeSpace(prefix) + q + normalizeSpace(suffix);
+      var i = hay.indexOf(probe);
+      if (i >= 0) {
+        // quote 在 probe 中的起点（prefix 可能被空白折叠改变长度，改用从尾部推算更稳）
+        var qStart = i + normalizeSpace(prefix).length;
+        return { start: qStart, end: qStart + q.length, hay: hay };
+      }
+    }
+    var j = hay.indexOf(q);
+    if (j >= 0) return { start: j, end: j + q.length, hay: hay };
+    return null;
+  }
+
+  // 把折叠空白串中的 [start,end) 映射回原始文本节点区间并包裹 <mark>
+  function renderHighlight(index, match, noteId) {
+    var hay = match.hay;
+    // 1. 构建「折叠串位置 → 原始串位置」映射
+    var raw = index.text;
+    var map = []; // map[collapsedPos] = rawPos
+    var cp = 0, rp = 0;
+    var lastWasSpace = true; // 开头空白折叠掉
+    while (rp < raw.length) {
+      var ch = raw[rp];
+      if (/\s/.test(ch)) {
+        if (!lastWasSpace) { map[cp++] = rp; lastWasSpace = true; }
+        // 连续空白只保留一个映射点
+        rp++;
+        while (rp < raw.length && /\s/.test(raw[rp])) rp++;
+      } else {
+        map[cp++] = rp;
+        lastWasSpace = false;
+        rp++;
+      }
+    }
+    map[cp] = raw.length; // 哨兵
+
+    // 2. 折叠区间 → 原始区间
+    var rawStart = map[match.start] !== undefined ? map[match.start] : -1;
+    var rawEnd = map[match.end] !== undefined ? map[match.end] : raw.length;
+    if (rawStart < 0) return false;
+
+    // 3. 原始偏移 → 文本节点区间列表
+    var offsets = index.offsets;
+    var segments = [];
+    for (var k = 0; k < offsets.length; k++) {
+      var seg = offsets[k];
+      var segEnd = (k + 1 < offsets.length) ? offsets[k + 1].start : raw.length;
+      if (segEnd <= rawStart) continue;
+      if (seg.start >= rawEnd) break;
+      var s = Math.max(seg.start, rawStart) - seg.start;
+      var e = Math.min(segEnd, rawEnd) - seg.start;
+      if (e > s) segments.push({ node: seg.node, s: s, e: e });
+    }
+
+    // 4. 逐段包裹（从后往前，避免修改 DOM 使引用失效）
+    for (var m = segments.length - 1; m >= 0; m--) {
+      var sg = segments[m];
+      var range = document.createRange();
+      range.setStart(sg.node, sg.s);
+      range.setEnd(sg.node, sg.e);
+      var mark = document.createElement('mark');
+      mark.className = 'note-highlight';
+      mark.setAttribute('data-note-id', noteId);
+      try {
+        range.surroundContents(mark);
+      } catch (err) {
+        // 节点边界特殊情况：退化用 extractContents 包裹
+        var frag = range.extractContents();
+        mark.appendChild(frag);
+        range.insertNode(mark);
+      }
+    }
+    return segments.length > 0;
+  }
+
+  // 当前页恢复所有笔记高亮
+  function renderPageNotes() {
+    var content = document.querySelector('#mdbook-content main') || document.querySelector('.content main');
+    if (!content) return;
+    var notes = getNotesForPath(window.location.pathname);
+    if (!notes.length) return;
+    var index = buildTextIndex(content);
+    if (!index) return;
+    notes.forEach(function (note) {
+      var match = findMatch(index, note.prefix, note.quote, note.suffix);
+      if (match) {
+        renderHighlight(index, match, note.id);
+      }
+      // 定位失败：静默跳过（spec 规定）
+    });
+  }
+
   // === 启动入口（后续任务在此追加初始化调用） ===
   function init() {
-    // Task 3/4/5/6/7/8 依次填充
+    renderPageNotes();
   }
 
   if (document.readyState === 'loading') {
