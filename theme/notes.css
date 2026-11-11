@@ -37,7 +37,7 @@
 
 /* 创建笔记浮层 */
 .note-popup {
-  position: absolute;
+  position: fixed;
   z-index: 10001;
   width: 260px;
   padding: 10px;

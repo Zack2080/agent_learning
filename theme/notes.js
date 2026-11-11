@@ -181,6 +181,9 @@
     // 4. 逐段包裹（从后往前，避免修改 DOM 使引用失效）
     for (var m = segments.length - 1; m >= 0; m--) {
       var sg = segments[m];
+      // 跳过纯空白段：包进 mark 会让 buildTextIndex 过滤后丢失该空白，
+      // 导致同会话后续 quote 匹配失败
+      if (!/\S/.test(sg.node.nodeValue.slice(sg.s, sg.e))) continue;
       var range = document.createRange();
       range.setStart(sg.node, sg.s);
       range.setEnd(sg.node, sg.e);
