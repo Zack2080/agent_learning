@@ -34,3 +34,60 @@
 .ayu .note-highlight:hover {
   background: rgba(250, 204, 21, 0.38);
 }
+
+/* 创建笔记浮层 */
+.note-popup {
+  position: absolute;
+  z-index: 10001;
+  width: 260px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--bg, #fff);
+  color: var(--fg, #333);
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+  font-size: 0.85rem;
+}
+.note-popup-label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+.note-popup-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: var(--searchbar-bg, #fff);
+  color: var(--fg, #333);
+  outline: none;
+}
+.note-popup-input:focus {
+  border-color: var(--links, #3783eb);
+}
+.note-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.note-popup-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+  background: transparent;
+  color: var(--fg, #333);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.note-popup-btn.primary {
+  background: var(--links, #3783eb);
+  border-color: var(--links, #3783eb);
+  color: #fff;
+}
+.note-popup-btn.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

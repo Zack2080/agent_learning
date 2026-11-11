@@ -92,7 +92,9 @@
       NodeFilter.SHOW_TEXT,
       {
         acceptNode: function (node) {
-          if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+          // 仅剔除完全空的节点；whitespace-only 节点保留，
+          // 使拼接串空白分布与 selection.toString() 跨块时的表现一致
+          if (!node.nodeValue) return NodeFilter.FILTER_REJECT;
           var p = node.parentElement;
           // 跳过已有标记与脚本样式
           if (p && (p.closest('script, style, .note-highlight'))) return NodeFilter.FILTER_REJECT;
@@ -214,9 +216,173 @@
     });
   }
 
+  // === 右键创建浮层 ===
+  // 从选区提取笔记字段（quote/prefix/suffix/所在小节）
+  function selectionToNoteFields(contentRoot, selection) {
+    var range = selection.getRangeAt(0);
+    if (!contentRoot.contains(range.commonAncestorContainer)) return null;
+    var quote = selection.toString().replace(/\s+/g, ' ').trim();
+    if (!quote) return null;
+    if (quote.length > 200) quote = quote.slice(0, 200);
+
+    var index = buildTextIndex(contentRoot);
+    if (!index) return null;
+    var head = quote.slice(0, 30);
+    var pos = index.text.indexOf(head);
+    var prefix = '', suffix = '';
+    if (pos >= 0) {
+      prefix = index.text.slice(Math.max(0, pos - 32), pos).replace(/\s+/g, ' ').trim();
+      var tail = quote.slice(-30);
+      var endGuess = index.text.indexOf(tail, pos);
+      var qEnd = endGuess >= 0 ? endGuess + tail.length : pos + 30;
+      suffix = index.text.slice(qEnd, qEnd + 32).replace(/\s+/g, ' ').trim();
+    }
+
+    // 所在小节：收集所有标题，找选区起点之前最后一个
+    var headings = contentRoot.querySelectorAll('h2[id], h3[id]');
+    var rangeStart = getOffsetInContent(contentRoot, range.startContainer) +
+      (range.startContainer.nodeType === 3 ? range.startOffset : 0);
+    var sectionId = '', sectionTitle = '';
+    for (var i = headings.length - 1; i >= 0; i--) {
+      var h = headings[i];
+      if (getOffsetInContent(contentRoot, h) <= rangeStart) {
+        sectionId = h.id;
+        sectionTitle = h.textContent.replace(/\s*#\s*$/, '').trim();
+        break;
+      }
+    }
+    return { quote: quote, prefix: prefix, suffix: suffix, sectionId: sectionId, sectionTitle: sectionTitle };
+  }
+
+  // 元素/位置在 content 拼接文本中的偏移（用于比较标题与选区先后）
+  function getOffsetInContent(contentRoot, target) {
+    var index = buildTextIndex(contentRoot);
+    if (!index) return 0;
+    var offsets = index.offsets;
+    if (target.nodeType === 1) {
+      // 元素：取其内部第一个文本节点位置
+      var w = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
+      var t = w.nextNode();
+      if (!t) return 0;
+      for (var i = 0; i < offsets.length; i++) {
+        if (offsets[i].node === t) return offsets[i].start;
+      }
+      return 0;
+    }
+    // 文本节点（仅返回节点起始偏移；节点内偏移由调用方加 startOffset）
+    for (var j = 0; j < offsets.length; j++) {
+      if (offsets[j].node === target) return offsets[j].start;
+    }
+    return 0;
+  }
+
+  function initCreatePopup() {
+    var content = document.querySelector('#mdbook-content main') || document.querySelector('.content main');
+    if (!content) return;
+
+    var popup = null;
+
+    function closePopup() {
+      if (popup) { popup.remove(); popup = null; }
+      document.removeEventListener('mousedown', onDocDown, true);
+    }
+
+    function onDocDown(e) {
+      if (popup && !popup.contains(e.target)) closePopup();
+    }
+
+    content.addEventListener('contextmenu', function (e) {
+      var sel = window.getSelection();
+      if (!sel || sel.isCollapsed || !sel.toString().trim()) return; // 无选区 → 放行原生菜单
+      e.preventDefault();
+      closePopup();
+
+      var fields = selectionToNoteFields(content, sel);
+      if (!fields) return;
+
+      var isZh = isZhPage();
+      popup = document.createElement('div');
+      popup.className = 'note-popup';
+      var label = document.createElement('label');
+      label.className = 'note-popup-label';
+      label.textContent = isZh ? '标记名' : 'Note label';
+      var input = document.createElement('input');
+      input.className = 'note-popup-input';
+      input.maxLength = 30;
+      input.value = fields.quote.slice(0, 12);
+      var actions = document.createElement('div');
+      actions.className = 'note-popup-actions';
+      var cancel = document.createElement('button');
+      cancel.className = 'note-popup-btn';
+      cancel.textContent = isZh ? '取消' : 'Cancel';
+      var ok = document.createElement('button');
+      ok.className = 'note-popup-btn primary';
+      ok.textContent = isZh ? '确认' : 'Confirm';
+
+      actions.appendChild(cancel);
+      actions.appendChild(ok);
+      popup.appendChild(label);
+      popup.appendChild(input);
+      popup.appendChild(actions);
+      document.body.appendChild(popup);
+
+      // 定位：鼠标右下方，防止溢出视口
+      var x = Math.min(e.clientX + 12, window.innerWidth - 280);
+      var y = Math.min(e.clientY + 12, window.innerHeight - 140);
+      popup.style.left = x + 'px';
+      popup.style.top = y + 'px';
+
+      input.focus();
+      input.select();
+
+      function confirmCreate() {
+        var name = input.value.trim();
+        if (!name) return;
+        var range = sel.getRangeAt(0);
+        // 保存选区端点（sel 在 focus 移动后可能失效，重新设置）
+        var savedRange = document.createRange();
+        savedRange.setStart(range.startContainer, range.startOffset);
+        savedRange.setEnd(range.endContainer, range.endOffset);
+
+        var chapterTitleEl = content.querySelector('h1');
+        var note = {
+          id: genId(),
+          label: name,
+          chapterPath: window.location.pathname,
+          chapterTitle: chapterTitleEl ? chapterTitleEl.textContent.trim() : '',
+          sectionId: fields.sectionId,
+          sectionTitle: fields.sectionTitle,
+          quote: fields.quote,
+          prefix: fields.prefix,
+          suffix: fields.suffix,
+          createdAt: Date.now()
+        };
+        addNote(note);
+        // 直接对当前选区包裹高亮（不必重新查找）
+        var index = buildTextIndex(content);
+        if (index) {
+          var m = findMatch(index, note.prefix, note.quote, note.suffix);
+          if (m) renderHighlight(index, m, note.id);
+        }
+        closePopup();
+        sel.removeAllRanges();
+        if (window.__notesPanelRefresh) window.__notesPanelRefresh();
+      }
+
+      ok.addEventListener('click', confirmCreate);
+      input.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') confirmCreate();
+        if (ev.key === 'Escape') closePopup();
+      });
+      cancel.addEventListener('click', closePopup);
+      document.addEventListener('mousedown', onDocDown, true);
+    });
+  }
+
   // === 启动入口（后续任务在此追加初始化调用） ===
   function init() {
     renderPageNotes();
+    initCreatePopup();
   }
 
   if (document.readyState === 'loading') {
