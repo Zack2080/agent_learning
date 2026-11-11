@@ -140,24 +140,24 @@
   // 把折叠空白串中的 [start,end) 映射回原始文本节点区间并包裹 <mark>
   function renderHighlight(index, match, noteId) {
     var hay = match.hay;
-    // 1. 构建「折叠串位置 → 原始串位置」映射
+    // 1. 构建「折叠串位置 → 原始串位置」映射（与 normalizeSpace 语义严格对齐：
+    //    连续空白折叠为一个空格，每个空白 run——含开头/结尾——都占一个映射点）
     var raw = index.text;
     var map = []; // map[collapsedPos] = rawPos
     var cp = 0, rp = 0;
-    var lastWasSpace = true; // 开头空白折叠掉
     while (rp < raw.length) {
       var ch = raw[rp];
       if (/\s/.test(ch)) {
-        if (!lastWasSpace) { map[cp++] = rp; lastWasSpace = true; }
-        // 连续空白只保留一个映射点
-        rp++;
+        // 折叠当前空白 run 为一个映射点（无论是否在开头/结尾）
+        map[cp++] = rp;
         while (rp < raw.length && /\s/.test(raw[rp])) rp++;
       } else {
         map[cp++] = rp;
-        lastWasSpace = false;
         rp++;
       }
     }
+    // 尾部若以空白结尾，normalizeSpace 同样保留一个尾随空格——循环已给它映射点；
+    // 哨兵（下标 = hay.length）兜住 match.end 越过尾随空格的情况
     map[cp] = raw.length; // 哨兵
 
     // 2. 折叠区间 → 原始区间
