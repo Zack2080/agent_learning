@@ -575,11 +575,106 @@
     requestAnimationFrame(updatePanelPosition);
   }
 
+  // === 点击笔记跳转定位 ===
+  var PENDING_NAV_KEY = 'notes-pending-nav';
+
+  function scrollToHighlight() {
+    var marks = document.querySelectorAll('.note-highlight');
+    if (!marks.length) return false;
+    var target = marks[0];
+    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    target.classList.add('note-pulse');
+    setTimeout(function () { target.classList.remove('note-pulse'); }, 1300);
+    return true;
+  }
+
+  // 笔记点击 → 跳到对应页面并定位
+  function navigateToNote(note) {
+    var here = window.location.pathname;
+    if (note.chapterPath !== here) {
+      // 跨页：写入 pending 标记后跳转，目标页 init 时消费
+      try {
+        sessionStorage.setItem(PENDING_NAV_KEY, JSON.stringify({ id: note.id, ts: Date.now() }));
+      } catch (e) {}
+      var url = note.chapterPath;
+      fetch(url, { method: 'HEAD' }).then(function (res) {
+        window.location.href = res.ok ? url : here; // 404 时留在本页（见下方提示）
+        if (!res.ok) alert(isZhPage() ? '原页面已不存在' : 'The original page no longer exists');
+      }).catch(function () {
+        window.location.href = url; // 本地服务可能不支持 HEAD，直接跳
+      });
+      return;
+    }
+    // 同页：查找并滚动
+    var mark = document.querySelector('.note-highlight[data-note-id="' + cssEscape(note.id) + '"]');
+    if (mark) {
+      mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      mark.classList.add('note-pulse');
+      setTimeout(function () { mark.classList.remove('note-pulse'); }, 1300);
+      return;
+    }
+    // 高亮缺失（漂移）：尝试实时查找，再退回小节标题
+    var content = document.querySelector('#mdbook-content main') || document.querySelector('.content main');
+    if (content) {
+      var index = buildTextIndex(content);
+      var m = index && findMatch(index, note.prefix, note.quote, note.suffix);
+      if (m && renderHighlight(index, m, note.id)) {
+        scrollToHighlight();
+        return;
+      }
+      if (note.sectionId) {
+        var h = document.getElementById(note.sectionId);
+        if (h) {
+          h.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          h.classList.add('note-pulse');
+          setTimeout(function () { h.classList.remove('note-pulse'); }, 1300);
+          return;
+        }
+      }
+    }
+    alert(isZhPage() ? '未能定位到笔记原文（内容可能已更新）' : 'Could not locate the note text (content may have changed)');
+  }
+
+  function cssEscape(s) {
+    return (window.CSS && CSS.escape) ? CSS.escape(s) : s.replace(/["\\\]]/g, '\\$&');
+  }
+
+  function initNavigation() {
+    window.__notesNavigate = navigateToNote;
+
+    // 页面高亮点击 → 脉冲提示
+    document.addEventListener('click', function (e) {
+      var mark = e.target.closest('.note-highlight');
+      if (mark) {
+        mark.classList.add('note-pulse');
+        setTimeout(function () { mark.classList.remove('note-pulse'); }, 1300);
+      }
+    });
+
+    // 消费跨页跳转请求
+    try {
+      var raw = sessionStorage.getItem(PENDING_NAV_KEY);
+      if (raw) {
+        sessionStorage.removeItem(PENDING_NAV_KEY);
+        var req = JSON.parse(raw);
+        if (req && req.id && Date.now() - req.ts < 10000) {
+          var notes = loadNotes();
+          var note = null;
+          notes.forEach(function (n) { if (n.id === req.id) note = n; });
+          if (note) {
+            setTimeout(function () { navigateToNote(note); }, 300); // 等高亮渲染
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
   // === 启动入口（后续任务在此追加初始化调用） ===
   function init() {
     renderPageNotes();
     initCreatePopup();
     initPanel();
+    initNavigation();
   }
 
   if (document.readyState === 'loading') {
