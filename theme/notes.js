@@ -578,10 +578,12 @@
   // === 点击笔记跳转定位 ===
   var PENDING_NAV_KEY = 'notes-pending-nav';
 
-  function scrollToHighlight() {
-    var marks = document.querySelectorAll('.note-highlight');
-    if (!marks.length) return false;
-    var target = marks[0];
+  function scrollToHighlight(noteId) {
+    var sel = noteId
+      ? '.note-highlight[data-note-id="' + cssEscape(noteId) + '"]'
+      : '.note-highlight';
+    var target = document.querySelector(sel);
+    if (!target) return false;
     target.scrollIntoView({ behavior: 'smooth', block: 'center' });
     target.classList.add('note-pulse');
     setTimeout(function () { target.classList.remove('note-pulse'); }, 1300);
@@ -598,8 +600,12 @@
       } catch (e) {}
       var url = note.chapterPath;
       fetch(url, { method: 'HEAD' }).then(function (res) {
-        window.location.href = res.ok ? url : here; // 404 时留在本页（见下方提示）
-        if (!res.ok) alert(isZhPage() ? '原页面已不存在' : 'The original page no longer exists');
+        if (!res.ok) {
+          try { sessionStorage.removeItem(PENDING_NAV_KEY); } catch (err) {}
+          window.alert(isZhPage() ? '原页面已不存在' : 'The original page no longer exists');
+          return; // 留在本页，不触发重载
+        }
+        window.location.href = url;
       }).catch(function () {
         window.location.href = url; // 本地服务可能不支持 HEAD，直接跳
       });
@@ -619,7 +625,7 @@
       var index = buildTextIndex(content);
       var m = index && findMatch(index, note.prefix, note.quote, note.suffix);
       if (m && renderHighlight(index, m, note.id)) {
-        scrollToHighlight();
+        scrollToHighlight(note.id);
         return;
       }
       if (note.sectionId) {
