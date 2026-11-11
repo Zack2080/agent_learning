@@ -211,11 +211,16 @@
     var index = buildTextIndex(content);
     if (!index) return;
     notes.forEach(function (note) {
-      var match = findMatch(index, note.prefix, note.quote, note.suffix);
-      if (match) {
-        renderHighlight(index, match, note.id);
+      try {
+        var match = findMatch(index, note.prefix, note.quote, note.suffix);
+        if (match) {
+          renderHighlight(index, match, note.id);
+        }
+        // 定位失败：静默跳过（spec 规定）
+      } catch (e) {
+        console.warn('[notes] 渲染单条笔记高亮失败', e);
+        // 继续处理下一条
       }
-      // 定位失败：静默跳过（spec 规定）
     });
   }
 
@@ -341,11 +346,6 @@
       function confirmCreate() {
         var name = input.value.trim();
         if (!name) return;
-        var range = sel.getRangeAt(0);
-        // 保存选区端点（sel 在 focus 移动后可能失效，重新设置）
-        var savedRange = document.createRange();
-        savedRange.setStart(range.startContainer, range.startOffset);
-        savedRange.setEnd(range.endContainer, range.endOffset);
 
         var chapterTitleEl = content.querySelector('h1');
         var note = {
@@ -796,6 +796,7 @@
               typeof n.id === 'string' && n.id &&
               typeof n.label === 'string' &&
               typeof n.chapterPath === 'string' &&
+              n.chapterPath.indexOf('/') === 0 &&
               typeof n.quote === 'string' && n.quote;
           });
           var local = loadNotes();
