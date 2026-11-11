@@ -1,0 +1,36 @@
+/* ============================================
+   从零开始学 Agent - 在线笔记样式
+   ============================================ */
+
+/* 笔记高亮标记 */
+.note-highlight {
+  background: rgba(250, 204, 21, 0.35);
+  box-shadow: inset 3px 0 0 #eab308;
+  border-radius: 2px;
+  padding: 1px 0;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.note-highlight:hover {
+  background: rgba(250, 204, 21, 0.55);
+}
+.note-highlight.note-pulse {
+  animation: note-pulse 1.2s ease-out;
+}
+@keyframes note-pulse {
+  0% { background: rgba(250, 204, 21, 0.75); }
+  100% { background: rgba(250, 204, 21, 0.35); }
+}
+
+/* 暗色主题适配 */
+.navy .note-highlight,
+.coal .note-highlight,
+.ayu .note-highlight {
+  background: rgba(250, 204, 21, 0.22);
+  box-shadow: inset 3px 0 0 #ca8a04;
+}
+.navy .note-highlight:hover,
+.coal .note-highlight:hover,
+.ayu .note-highlight:hover {
+  background: rgba(250, 204, 21, 0.38);
+}
