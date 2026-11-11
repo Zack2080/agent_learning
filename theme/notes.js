@@ -382,10 +382,204 @@
     });
   }
 
+  // === 左侧笔记面板 ===
+  function initPanel() {
+    // 窄屏不渲染
+    if (window.matchMedia('(max-width: 1080px)').matches) return;
+
+    var panel = document.createElement('div');
+    panel.id = 'notes-panel';
+    var rail = document.createElement('div');
+    rail.id = 'notes-panel-rail';
+    document.body.appendChild(panel);
+    document.body.appendChild(rail);
+
+    var savedCollapsed = false;
+    try { savedCollapsed = localStorage.getItem(PANEL_KEY) === '1'; } catch (e) {}
+
+    function applyCollapsed(collapsed) {
+      if (collapsed) {
+        panel.classList.add('np-hidden');
+        rail.classList.add('np-visible');
+        document.body.classList.remove('notes-panel-open');
+      } else {
+        panel.classList.remove('np-hidden');
+        rail.classList.remove('np-visible');
+        document.body.classList.add('notes-panel-open');
+      }
+      try { localStorage.setItem(PANEL_KEY, collapsed ? '1' : '0'); } catch (e) {}
+      updatePanelPosition();
+    }
+
+    // 跟随 sidebar 位置与宽度（含拖拽调宽）
+    function updatePanelPosition() {
+      var sidebar = document.getElementById('mdbook-sidebar');
+      if (!sidebar) return;
+      var rect = sidebar.getBoundingClientRect();
+      var left = Math.max(rect.right, 0);
+      panel.style.left = left + 'px';
+      rail.style.left = left + 'px';
+    }
+    window.addEventListener('resize', updatePanelPosition);
+    if ('ResizeObserver' in window) {
+      new ResizeObserver(updatePanelPosition).observe(sidebarEl());
+    }
+    function sidebarEl() { return document.getElementById('mdbook-sidebar'); }
+    // 侧栏 transform 动画结束后刷新位置
+    sidebarEl().addEventListener('transitionend', updatePanelPosition);
+
+    var collapseBtn = null;
+    // 头部
+    var header = document.createElement('div');
+    header.className = 'np-header';
+    var title = document.createElement('span');
+    title.className = 'np-title';
+    title.textContent = isZhPage() ? '我的笔记' : 'My Notes';
+    var badge = document.createElement('span');
+    badge.className = 'np-badge';
+    var btns = document.createElement('span');
+    btns.className = 'np-btns';
+
+    function iconBtn(symbol, titleText, onClick) {
+      var b = document.createElement('button');
+      b.className = 'np-icon-btn';
+      b.type = 'button';
+      b.innerHTML = symbol;
+      b.title = titleText;
+      b.setAttribute('aria-label', titleText);
+      b.addEventListener('click', onClick);
+      btns.appendChild(b);
+      return b;
+    }
+
+    collapseBtn = iconBtn('‹', isZhPage() ? '收起面板' : 'Collapse panel', function () {
+      applyCollapsed(true);
+    });
+    iconBtn('⇩', isZhPage() ? '导出笔记' : 'Export notes', function () {
+      if (window.__notesExport) window.__notesExport();
+    });
+    iconBtn('⇧', isZhPage() ? '导入笔记' : 'Import notes', function () {
+      if (window.__notesImport) window.__notesImport();
+    });
+
+    header.appendChild(title);
+    header.appendChild(badge);
+    header.appendChild(btns);
+    panel.appendChild(header);
+
+    var list = document.createElement('div');
+    list.className = 'np-list';
+    panel.appendChild(list);
+
+    rail.addEventListener('click', function () { applyCollapsed(false); });
+    rail.innerHTML = '<span>✎</span><span class="np-rail-count">0</span>';
+    rail.title = isZhPage() ? '展开笔记面板' : 'Expand notes panel';
+
+    // 全量重建列表
+    function refreshPanel() {
+      var notes = loadNotes();
+      badge.textContent = String(notes.length);
+      rail.querySelector('.np-rail-count').textContent = String(notes.length);
+      list.innerHTML = '';
+
+      if (!notes.length) {
+        var empty = document.createElement('div');
+        empty.className = 'np-empty';
+        empty.textContent = isZhPage()
+          ? '阅读时选中文字右键即可记笔记'
+          : 'Select text and right-click while reading to add a note';
+        list.appendChild(empty);
+        return;
+      }
+
+      // 按章节分组（保持添加顺序）
+      var groups = [];
+      var byPath = {};
+      notes.forEach(function (n) {
+        if (!byPath[n.chapterPath]) {
+          byPath[n.chapterPath] = { path: n.chapterPath, title: n.chapterTitle || n.chapterPath, items: [] };
+          groups.push(byPath[n.chapterPath]);
+        }
+        byPath[n.chapterPath].items.push(n);
+      });
+
+      groups.forEach(function (g) {
+        var group = document.createElement('div');
+        group.className = 'np-group';
+        var gt = document.createElement('div');
+        gt.className = 'np-group-title';
+        gt.textContent = g.title;
+        gt.title = g.title;
+        gt.addEventListener('click', function () {
+          group.classList.toggle('np-group-collapsed');
+        });
+        group.appendChild(gt);
+        g.items.forEach(function (n) {
+          var item = document.createElement('div');
+          item.className = 'np-item';
+          item.dataset.noteId = n.id;
+
+          var lab = document.createElement('div');
+          lab.className = 'np-item-label';
+          lab.textContent = n.label;
+          var meta = document.createElement('div');
+          meta.className = 'np-item-meta';
+          meta.textContent = n.sectionTitle || n.chapterTitle || '';
+          meta.title = meta.textContent;
+          var quo = document.createElement('div');
+          quo.className = 'np-item-quote';
+          quo.textContent = n.quote.slice(0, 60);
+          quo.title = n.quote;
+          item.appendChild(lab);
+          item.appendChild(meta);
+          item.appendChild(quo);
+
+          var acts = document.createElement('div');
+          acts.className = 'np-item-actions';
+          var editB = document.createElement('button');
+          editB.className = 'np-icon-btn';
+          editB.innerHTML = '✎';
+          editB.title = isZhPage() ? '编辑标签名' : 'Edit label';
+          var delB = document.createElement('button');
+          delB.className = 'np-icon-btn';
+          delB.innerHTML = '🗑';
+          delB.title = isZhPage() ? '删除笔记' : 'Delete note';
+          acts.appendChild(editB);
+          acts.appendChild(delB);
+          item.appendChild(acts);
+
+          // 点击跳转（Task 6 接管：先占位为空操作）
+          item.addEventListener('click', function (e) {
+            if (e.target.closest('.np-item-actions')) return;
+            if (window.__notesNavigate) window.__notesNavigate(n);
+          });
+          // 编辑（Task 7 接管：占位）
+          editB.addEventListener('click', function () {
+            if (window.__notesEditLabel) window.__notesEditLabel(n);
+          });
+          // 删除（Task 7 接管：占位）
+          delB.addEventListener('click', function () {
+            if (window.__notesDelete) window.__notesDelete(n);
+          });
+
+          group.appendChild(item);
+        });
+        list.appendChild(group);
+      });
+    }
+
+    window.__notesPanelRefresh = refreshPanel;
+    refreshPanel();
+    applyCollapsed(savedCollapsed);
+    // 延迟一次：sidebar transform 初值稳定后再校准
+    requestAnimationFrame(updatePanelPosition);
+  }
+
   // === 启动入口（后续任务在此追加初始化调用） ===
   function init() {
     renderPageNotes();
     initCreatePopup();
+    initPanel();
   }
 
   if (document.readyState === 'loading') {
