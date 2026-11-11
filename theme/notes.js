@@ -839,6 +839,57 @@
     };
   }
 
+  // === 高亮悬停提示条 ===
+  function initHighlightTooltip() {
+    var tip = null;
+    var hideTimer = null;
+
+    function hideTip() {
+      if (tip) { tip.remove(); tip = null; }
+    }
+
+    document.addEventListener('mouseover', function (e) {
+      var mark = e.target.closest('.note-highlight');
+      if (!mark) return;
+      clearTimeout(hideTimer);
+      hideTip();
+
+      var id = mark.getAttribute('data-note-id');
+      var note = null;
+      loadNotes().forEach(function (n) { if (n.id === id) note = n; });
+      if (!note) return;
+
+      var isZh = isZhPage();
+      tip = document.createElement('div');
+      tip.className = 'note-tip';
+      tip.textContent = note.label;
+      var del = document.createElement('button');
+      del.innerHTML = '✕';
+      del.title = isZh ? '删除' : 'Delete';
+      del.addEventListener('click', function () {
+        hideTip();
+        if (window.__notesDelete) window.__notesDelete(note);
+      });
+      tip.appendChild(del);
+
+      document.body.appendChild(tip);
+      var rect = mark.getBoundingClientRect();
+      var top = rect.top - 30;
+      if (top < 10) top = rect.bottom + 6;
+      tip.style.left = Math.min(rect.left, window.innerWidth - tip.offsetWidth - 10) + 'px';
+      tip.style.top = top + window.scrollY + 'px';
+
+      tip.addEventListener('mouseenter', function () { clearTimeout(hideTimer); });
+      tip.addEventListener('mouseleave', function () { hideTip(); });
+    });
+
+    document.addEventListener('mouseout', function (e) {
+      if (e.target.closest && e.target.closest('.note-highlight')) {
+        hideTimer = setTimeout(hideTip, 300);
+      }
+    });
+  }
+
   // === 启动入口（后续任务在此追加初始化调用） ===
   function init() {
     renderPageNotes();
@@ -847,6 +898,7 @@
     initNavigation();
     initEditDelete();
     initImportExport();
+    initHighlightTooltip();
   }
 
   if (document.readyState === 'loading') {
