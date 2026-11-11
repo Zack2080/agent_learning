@@ -675,12 +675,82 @@
     } catch (e) {}
   }
 
+  // === 编辑标签名 / 删除 ===
+  function initEditDelete() {
+    window.__notesEditLabel = function (note) {
+      var isZh = isZhPage();
+      var popup = document.createElement('div');
+      popup.className = 'note-popup';
+      popup.style.position = 'fixed';
+      popup.style.left = '50%';
+      popup.style.top = '30%';
+      popup.style.transform = 'translateX(-50%)';
+      var label = document.createElement('label');
+      label.className = 'note-popup-label';
+      label.textContent = isZh ? '修改标记名' : 'Edit label';
+      var input = document.createElement('input');
+      input.className = 'note-popup-input';
+      input.maxLength = 30;
+      input.value = note.label;
+      var actions = document.createElement('div');
+      actions.className = 'note-popup-actions';
+      var cancel = document.createElement('button');
+      cancel.className = 'note-popup-btn';
+      cancel.textContent = isZh ? '取消' : 'Cancel';
+      var ok = document.createElement('button');
+      ok.className = 'note-popup-btn primary';
+      ok.textContent = isZh ? '保存' : 'Save';
+      actions.appendChild(cancel);
+      actions.appendChild(ok);
+      popup.appendChild(label);
+      popup.appendChild(input);
+      popup.appendChild(actions);
+      document.body.appendChild(popup);
+      input.focus();
+      input.select();
+
+      function save() {
+        var name = input.value.trim();
+        if (!name) return;
+        updateNoteLabel(note.id, name);
+        popup.remove();
+        document.removeEventListener('mousedown', onDocDown, true);
+        if (window.__notesPanelRefresh) window.__notesPanelRefresh();
+      }
+      function onDocDown(e) { if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('mousedown', onDocDown, true); } }
+
+      ok.addEventListener('click', save);
+      input.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') save();
+        if (ev.key === 'Escape') { popup.remove(); document.removeEventListener('mousedown', onDocDown, true); }
+      });
+      cancel.addEventListener('click', function () { popup.remove(); document.removeEventListener('mousedown', onDocDown, true); });
+      document.addEventListener('mousedown', onDocDown, true);
+    };
+
+    window.__notesDelete = function (note) {
+      var isZh = isZhPage();
+      if (!window.confirm(isZh ? '删除笔记「' + note.label + '」？' : 'Delete note "' + note.label + '"?')) return;
+      removeNote(note.id);
+      // 移除页面上的高亮（unwrap）
+      var marks = document.querySelectorAll('.note-highlight[data-note-id="' + cssEscape(note.id) + '"]');
+      marks.forEach(function (mark) {
+        var parent = mark.parentNode;
+        while (mark.firstChild) parent.insertBefore(mark.firstChild, mark);
+        parent.removeChild(mark);
+        parent.normalize();
+      });
+      if (window.__notesPanelRefresh) window.__notesPanelRefresh();
+    };
+  }
+
   // === 启动入口（后续任务在此追加初始化调用） ===
   function init() {
     renderPageNotes();
     initCreatePopup();
     initPanel();
     initNavigation();
+    initEditDelete();
   }
 
   if (document.readyState === 'loading') {
